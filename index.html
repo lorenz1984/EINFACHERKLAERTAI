@@ -538,27 +538,26 @@
     }, 1800);
 
     try {
-        const response = await fetch("/.netlify/functions/gemini", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: `Erkläre ${state.keyword} in 3 Stufen: 1. Einfach, 2. Noch einfacher, 3. Mit einer Analogie.` }),
-        });
+    const response = await fetch("/.netlify/functions/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: `Erkläre ${state.keyword} in 3 Stufen.` }),
+    });
 
-       const data = await response.json();
-        
-        // Extrahiere den Text aus der Gemini-Antwortstruktur
-        const rawText = data.candidates[0].content.parts[0].text;
-        
-        // Jetzt verarbeitest du rawText weiter
-        state.currentExplanation = rawText; 
-        state.isLoading = false;
-        clearInterval(loadingInterval);
-        
-        state.history.unshift(state.keyword);
-        localStorage.setItem('simplifier_history', JSON.stringify(state.history));
-        
-        renderAll();
-   } catch (err) {
+    if (!response.ok) throw new Error("API-Fehler");
+
+    const data = await response.json();
+    
+    // DEBUG: Schau dir in der Konsole an, was wirklich ankommt
+    console.log("Rohdaten von der API:", data);
+
+    // SICHERE ABFRAGE:
+    if (data && data.candidates && data.candidates.length > 0) {
+        // Hier dein bisheriger Code, der candidates[0] benutzt
+    } else {
+        console.error("Datenformat unerwartet oder leer:", data);
+    }
+} catch (err) {
         console.error("Fetch error:", err);
         state.isLoading = false;
         clearInterval(loadingInterval);
