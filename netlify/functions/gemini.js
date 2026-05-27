@@ -10,10 +10,10 @@ export const handler = async (event) => {
     })
   });
 
-  const data = await response.json();
+ const data = await response.json();
+  console.log("Antwort von Google:", data); // Füge diese Zeile hinzu
   
   return { 
     statusCode: response.ok ? 200 : 500, 
     body: JSON.stringify(data) 
   };
-};
