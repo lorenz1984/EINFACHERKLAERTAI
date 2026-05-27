@@ -115,8 +115,8 @@
                         />
                         <button
                             id="btn-search"
-                            onclick="triggerSearch()"
-                            class="px-6 py-4 bg-[#FACC15] hover:bg-yellow-400 disabled:bg-neutral-800 disabled:text-neutral-600 text-black rounded-none text-xs md:text-sm font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-2 cursor-pointer select-none"
+    onclick="triggerSearch(event)"
+    class="px-6 py-4 bg-[#FACC15] hover:bg-yellow-400 disabled:bg-neutral-800 disabled:text-neutral-600 text-black rounded-none text-xs md:text-sm font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-2 cursor-pointer select-none"
                         >
                             <span id="btn-search-text"></span>
                             <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -519,7 +519,8 @@
         }
 
         // Search trigger process using standard local API calls
-       async function triggerSearch() {
+       async function triggerSearch(event) {
+    if (event) event.preventDefault(); // <-- Das verhindert den Reload
     const inputVal = document.getElementById('search-input').value;
     if (!inputVal || inputVal.trim() === '') return;
 
