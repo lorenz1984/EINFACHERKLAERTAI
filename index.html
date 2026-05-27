@@ -557,10 +557,15 @@
         localStorage.setItem('simplifier_history', JSON.stringify(state.history));
         
         renderAll();
-    } catch (err) {
+   } catch (err) {
+        console.error("Fetch error:", err);
         state.isLoading = false;
         clearInterval(loadingInterval);
-        state.errorChat = err.message;
+        state.errorChat = {
+            title: "Verbindungsfehler",
+            msg: err.message,
+            desc: "Die API konnte nicht erreicht werden. Prüfe bitte, ob dein API-Key in den Netlify Environment Variables korrekt hinterlegt ist."
+        };
         renderAll();
             }
         }
@@ -589,8 +594,12 @@
                 });
 
                 const data = await response.json();
-                if (!response.ok || !data.success) {
-                    throw new Error(data.error || (state.lang === 'en' ? "Failed to get an answer." : "Antwort konnte nicht geladen werden."));
+    
+    // Sicherheit: Prüfen ob candidates existiert
+    if (data && data.candidates && data.candidates[0]) {
+        state.currentExplanation = data.candidates[0].content.parts[0].text;
+    } else {
+        throw new Error("Ungültiges Antwortformat der API");
                 }
 
                 state.questionAnswer = data.answer;
