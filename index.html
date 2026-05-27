@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EinfachErklärt.AI - Standalone</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;850;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind Configuration to match exact theme colors and fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+                    },
+                    colors: {
+                        neutral: {
+                            850: '#1F1F1F',
+                            950: '#0D0D0D'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom premium CSS styles -->
+    <style>
+        /* Custom scrollbar matching dark brutalist look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0A0A0A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #262626;
+            border-radius: 0px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #404040;
+        }
+        
+        /* Loading spinner animation keyframes */
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.15; }
+            50% { opacity: 0.8; }
+        }
+        .pulse-accent {
+            animation: pulse-slow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-[#0A0A0A] text-white selection:bg-[#FACC15] selection:text-black font-sans pb-12">
+    <!-- Decorative premium yellow stripe -->
+    <div class="h-1.5 bg-[#FACC15] w-full"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <!-- Persistent Premium Logo & Language Switcher Header -->
+        <div class="flex justify-between items-center border-b border-neutral-900 pb-5 mb-10 mt-2">
+            <div class="flex items-center space-x-2 cursor-pointer" onclick="resetView()">
+                <span class="text-2xl">🧠</span>
+                <span class="font-mono text-xs uppercase tracking-[0.25em] text-[#FACC15] font-black">EinfachErklärt.AI</span>
+            </div>
+            
+            <!-- Language Switcher -->
+            <div class="flex items-center space-x-1 bg-neutral-900 border border-neutral-800 p-1 font-mono text-xs rounded-none">
+                <button id="btn-lang-de" onclick="setLanguage('de')" class="px-3 py-1.5 font-bold uppercase transition-all whitespace-nowrap cursor-pointer">
+                    DE
+                </button>
+                <button id="btn-lang-en" onclick="setLanguage('en')" class="px-3 py-1.5 font-bold uppercase transition-all whitespace-nowrap cursor-pointer">
+                    EN
+                </button>
+            </div>
+        </div>
+
+        <!-- Onboarding / Pitch Header (only when nothing is explained) -->
+        <header id="pitch-header" class="flex flex-col items-center text-center space-y-4 mb-16 mt-6">
+            <span id="pitch-subtitle" class="text-xs uppercase tracking-[0.3em] text-[#FACC15] font-black"></span>
+            <h1 id="pitch-title" class="text-5xl md:text-8xl font-black tracking-tighter uppercase leading-none text-white"></h1>
+            <p id="pitch-tagline" class="text-neutral-400 text-sm md:text-lg max-w-2xl leading-relaxed font-bold"></p>
+        </header>
+
+        <!-- Dynamic API Alerts -->
+        <div id="error-alert" class="hidden mb-8 p-6 rounded-none border-l-4 border-rose-500 bg-neutral-900 text-neutral-200 text-sm flex items-start space-x-4 max-w-3xl mx-auto">
+            <span class="text-rose-500 text-xl font-bold">⚠️ ERROR_LOG:</span>
+            <div class="flex-grow">
+                <p id="error-alert-title" class="font-extrabold text-white text-base tracking-tight uppercase"></p>
+                <p id="error-alert-msg" class="mt-1 text-neutral-400 font-mono text-xs"></p>
+                <p id="error-alert-desc" class="mt-3 text-xs text-neutral-500 leading-relaxed"></p>
+            </div>
+        </div>
+
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-10 items-start">
+            <!-- MAIN SEARCH AND CONTENT SECTION (8 COLUMNS) -->
+            <section class="lg:col-span-8 space-y-8">
+                <!-- SEARCH CONSOLE -->
+                <div class="bg-neutral-900 border border-neutral-800 p-6 rounded-none relative">
+                    <span id="input-label" class="block text-xs font-bold uppercase tracking-[0.25em] text-neutral-400 mb-3 font-mono"></span>
+                    <div class="relative flex flex-col sm:flex-row items-stretch gap-2.5">
+                        <input
+                            type="text"
+                            id="search-input"
+                            placeholder=""
+                            class="w-full pl-4 pr-4 py-4 bg-neutral-950 border border-neutral-800 text-white font-bold placeholder-neutral-600 focus:outline-none focus:border-[#FACC15] transition-all text-sm md:text-base rounded-none"
+                            onkeydown="handleInputKeydown(event)"
+                        />
+                        <button
+                            id="btn-search"
+                            onclick="triggerSearch()"
+                            class="px-6 py-4 bg-[#FACC15] hover:bg-yellow-400 disabled:bg-neutral-800 disabled:text-neutral-600 text-black rounded-none text-xs md:text-sm font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-2 cursor-pointer select-none"
+                        >
+                            <span id="btn-search-text"></span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Instant Suggestions -->
+                    <div class="mt-5 border-t border-neutral-800/60 pt-4">
+                        <span id="popular-topics-label" class="text-[11px] text-neutral-500 uppercase tracking-widest block mb-2.5 font-bold font-mono"></span>
+                        <div id="popular-topics-box" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+
+                <!-- LOADING SCREEN -->
+                <div id="loading-screen" class="hidden bg-neutral-900 border border-neutral-800 p-12 text-center flex flex-col items-center justify-center min-h-[420px]">
+                    <div class="relative mb-6">
+                        <div class="w-16 h-16 border-4 border-neutral-800 border-t-[#FACC15] rounded-full animate-spin"></div>
+                        <span class="absolute inset-0 flex items-center justify-center text-xl">🧠</span>
+                    </div>
+                    <h3 id="loading-title" class="text-xl font-black uppercase tracking-wider text-[#FACC15] mb-2"></h3>
+                    
+                    <!-- Rotating step text -->
+                    <div class="h-10 overflow-hidden mt-2">
+                        <p id="loading-step-text" class="text-xs font-mono text-neutral-400 tracking-wider uppercase transition-all duration-200"></p>
+                    </div>
+                    <p id="loading-desc" class="text-xs text-neutral-500 mt-6 max-w-sm font-medium leading-relaxed"></p>
+                </div>
+
+                <!-- EXPLANATION VIEW -->
+                <div id="explanation-view" class="hidden space-y-8">
+                    <!-- HERO BOLD HEADER SECTION -->
+                    <div class="flex flex-col md:flex-row justify-between items-start border-b border-neutral-800 pb-8 gap-4">
+                        <div class="flex flex-col">
+                            <span id="explaining-label" class="text-xs uppercase tracking-[0.3em] text-neutral-500 font-bold mb-2"></span>
+                            <h2 id="explanation-topic" class="text-4xl md:text-7xl font-black tracking-tighter uppercase leading-none text-[#FACC15]"></h2>
+                        </div>
+                        <div class="text-left md:text-right shrink-0">
+                            <span id="simplification-level-label" class="text-xs uppercase tracking-[0.3em] text-neutral-500 font-bold block mb-1"></span>
+                            <div id="explanation-stage-counter" class="text-3xl md:text-5xl font-mono font-extrabold text-[#FACC15]"></div>
+                        </div>
+                    </div>
+
+                    <!-- ACTIVE EXPLANATION CONTAINER -->
+                    <div class="bg-neutral-900 border border-neutral-800 p-8 relative overflow-hidden flex flex-col min-h-[300px]">
+                        <div class="absolute top-0 right-0 p-4">
+                            <!-- Copy to clipboard button -->
+                            <button
+                                onclick="copyTextToClipboard()"
+                                class="p-2 py-1.5 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 text-neutral-400 hover:text-white text-xs font-bold uppercase tracking-widest flex items-center space-x-1.5 transition-all cursor-pointer"
+                            >
+                                <span id="btn-copy-content" class="flex items-center space-x-1">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    <span id="btn-copy-label"></span>
+                                </span>
+                            </button>
+                        </div>
+
+                        <div class="max-w-4xl flex-grow flex flex-col justify-center">
+                            <!-- Stage title sub-label -->
+                            <span id="explanation-stage-badge" class="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-[#FACC15] font-black block mb-4"></span>
+
+                            <!-- Accent yellow bar -->
+                            <div class="h-1.5 w-24 bg-[#FACC15] mb-6"></div>
+
+                            <!-- Explanation Text Paragraphs -->
+                            <div id="explanation-text" class="font-sans text-neutral-200 text-base md:text-lg leading-relaxed text-neutral-300 font-medium space-y-4 mb-6"></div>
+                        </div>
+
+                        <!-- NAVIGATION AND SELECTION EXTRACTION GRID inside main block -->
+                        <div class="border-t border-neutral-800/80 pt-6 mt-6">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+                                <span id="level-selection-label" class="text-xs uppercase tracking-[0.25em] text-neutral-400 font-bold font-mono"></span>
+                                <div class="flex items-center space-x-1.5 text-xs font-mono text-neutral-500 uppercase tracking-wider">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                    <span id="explanation-stage-desc"></span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+                                <!-- Stage 1 Tab Button -->
+                                <button onclick="setLevel(1)" id="stage-tab-1" class="text-left group cursor-pointer p-4 border transition-all"></button>
+                                <!-- Stage 2 Tab Button -->
+                                <button onclick="setLevel(2)" id="stage-tab-2" class="text-left group cursor-pointer p-4 border transition-all"></button>
+                                <!-- Stage 3 Tab Button -->
+                                <button onclick="setLevel(3)" id="stage-tab-3" class="text-left group cursor-pointer p-4 border transition-all"></button>
+                            </div>
+
+                            <!-- Q&A SECTION (Dynamic Questioning Tool) -->
+                            <div class="border-t border-neutral-800/80 pt-6 mt-10">
+                                <span class="block text-xs uppercase tracking-[0.25em] text-neutral-400 font-bold mb-4 font-mono flex items-center gap-1.5">
+                                    <span>❓</span>
+                                    <span id="qa-heading"></span>
+                                </span>
+
+                                <!-- Dynamic questions list -->
+                                <div id="dynamic-questions" class="mb-4">
+                                    <p id="qa-subheading" class="text-[10px] text-neutral-500 uppercase tracking-widest font-bold font-mono mb-2"></p>
+                                    <div id="dynamic-questions-buttons" class="flex flex-col gap-2"></div>
+                                </div>
+
+                                <!-- Custom interactive free-form input -->
+                                <div class="flex items-stretch gap-2 font-sans">
+                                    <input
+                                        type="text"
+                                        id="qa-custom-input"
+                                        placeholder=""
+                                        class="flex-grow p-3 bg-neutral-950 border border-neutral-800 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#FACC15] transition-all rounded-none font-medium"
+                                        onkeydown="handleQAInputKeydown(event)"
+                                    />
+                                    <button
+                                        onclick="submitCustomQuestion()"
+                                        id="btn-qa-ask"
+                                        class="bg-neutral-950 border border-neutral-800 hover:border-[#FACC15] hover:text-[#FACC15] disabled:bg-neutral-900 disabled:text-neutral-600 disabled:border-neutral-800 text-neutral-400 px-4 text-xs font-black uppercase tracking-wider transition-all flex items-center space-x-2 cursor-pointer select-none rounded-none"
+                                    >
+                                        <span id="qa-btn-text"></span>
+                                        <span class="text-[#FACC15]">⚡</span>
+                                    </button>
+                                </div>
+
+                                <!-- Ask Loader Indicator -->
+                                <div id="qa-loader" class="hidden mt-4 bg-neutral-950/80 border border-neutral-850 p-4 font-mono text-xs text-neutral-400 flex items-center space-x-2 animate-pulse">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-[#FACC15] animate-ping"></span>
+                                    <span id="qa-loader-text" class="font-bold uppercase tracking-wider text-[10px] text-[#FACC15]"></span>
+                                </div>
+
+                                <!-- Ask Error Log -->
+                                <p id="qa-error" class="hidden mt-4 text-xs text-rose-500 font-mono"></p>
+
+                                <!-- Ask Answer Block -->
+                                <div id="qa-answer-block" class="hidden mt-4 p-5 bg-neutral-950 border border-neutral-850 relative">
+                                    <div class="absolute top-3 right-3">
+                                        <button onclick="closeQAAnswer()" id="qa-close-btn" class="text-[10px] text-neutral-600 hover:text-white uppercase tracking-widest font-bold transition-colors font-mono cursor-pointer"></button>
+                                    </div>
+                                    <div class="flex items-center space-x-2 border-b border-neutral-800/80 pb-3 mb-4">
+                                        <span id="qa-tag-label" class="text-[10px] text-neutral-500 font-mono uppercase tracking-widest font-black block"></span>
+                                        <span class="text-neutral-700">|</span>
+                                        <p id="qa-active-question-quote" class="text-[10px] text-neutral-300 font-semibold italic truncate max-w-[320px]"></p>
+                                    </div>
+                                    <div id="qa-answer-content" class="text-sm text-neutral-300 font-medium leading-relaxed space-y-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reset search helper -->
+                    <div class="flex justify-end pt-2">
+                        <button onclick="resetView()" class="text-neutral-500 hover:text-neutral-300 text-xs font-mono font-bold uppercase tracking-widest flex items-center space-x-1 transition-all">
+                            <span id="btn-new-search"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CAROUSEL/ONBOARDING DEFAULT STATE -->
+                <div id="onboarding-empty" class="bg-neutral-900 border border-neutral-800 p-10 md:p-16 text-center flex flex-col items-center justify-center min-h-[420px]">
+                    <div class="w-20 h-20 bg-neutral-950 border border-neutral-800 flex items-center justify-center text-3xl mb-6 shadow-inner select-none font-bold">
+                        🎯
+                    </div>
+                    <h3 id="ready-title" class="text-2xl font-black uppercase tracking-tight text-white mb-2"></h3>
+                    <p id="ready-desc" class="text-neutral-400 max-w-md text-sm md:text-base mb-8 leading-relaxed"></p>
+
+                    <!-- Showcase cards -->
+                    <div id="ready-showcase-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl mt-4 text-left"></div>
+                </div>
+            </section>
+
+            <!-- SIDEBAR HISTORY SECTION (4 COLUMNS) -->
+            <aside class="lg:col-span-4 bg-neutral-900 border border-neutral-800 p-6 space-y-6 font-sans">
+                <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+                    <div class="flex items-center space-x-2 text-neutral-200">
+                        <i data-lucide="history" class="w-4 h-4 text-neutral-400"></i>
+                        <h3 id="history-box-title" class="font-extrabold text-xs uppercase tracking-wider"></h3>
+                    </div>
+                    <button id="btn-clear-history" onclick="clearSearchHistory()" class="hidden text-[10px] text-rose-500 hover:text-rose-450 font-black uppercase tracking-widest transition-colors flex items-center space-x-1 cursor-pointer">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i>
+                        <span id="history-clear-btn-lbl"></span>
+                    </button>
+                </div>
+
+                <!-- History list box -->
+                <div id="history-list-box" class="space-y-2.5 max-h-[350px] overflow-y-auto pr-1"></div>
+
+                <!-- Pro informational Tip matching App.tsx -->
+                <div class="pt-4 border-t border-neutral-800 text-xs text-neutral-400 leading-relaxed bg-neutral-950 p-4 border border-neutral-800">
+                    <span id="pro-tip-title" class="font-black text-[#FACC15] uppercase tracking-widest block mb-1"></span>
+                    <span id="pro-tip-desc"></span>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Bottom Decorator Footer -->
+        <div class="mt-16 flex flex-col md:flex-row gap-4 justify-between items-center border-t border-neutral-900 pt-8 text-neutral-500 text-xs">
+            <div class="flex flex-wrap gap-6 justify-center items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span class="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">AI CONTEXT: ACTIVATED</span>
+                </div>
+                <div id="context-mode-sub" class="text-[10px] uppercase tracking-widest text-neutral-400 font-bold italic"></div>
+            </div>
+            <div class="text-[10px] uppercase tracking-widest text-[#FACC15] font-black tracking-[0.2em]">
+                EinfachErklärt.AI v.2.4 (Standalone)
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Javascript Logic -->
+    <script>
+        // Suggested topics
+        const SUGGESTED_TOPICS = {
+            de: [
+                { keyword: "Quantenphysik", label: "Quantenphysik", icon: "⚛️" },
+                { keyword: "Inflation", label: "Inflation", icon: "📈" },
+                { keyword: "Blockchain", label: "Blockchain", icon: "⛓️" },
+                { keyword: "Schwarzes Loch", label: "Schwarzes Loch", icon: "🕳️" },
+                { keyword: "Photosynthese", label: "Photosynthese", icon: "🌱" },
+                { keyword: "Kryptographie", label: "Kryptographie", icon: "🔐" },
+            ],
+            en: [
+                { keyword: "Quantum entanglement", label: "Quantum physics", icon: "⚛️" },
+                { keyword: "Inflation", label: "Inflation", icon: "📈" },
+                { keyword: "Blockchain", label: "Blockchain", icon: "⛓️" },
+                { keyword: "Black holes", label: "Black holes", icon: "🕳️" },
+                { keyword: "Photosynthesis", label: "Photosynthesis", icon: "🌱" },
+                { keyword: "Cryptography", label: "Cryptography", icon: "🔐" },
+            ]
+        };
+
+        const LOADING_STEPS = {
+            de: [
+                "Thema wird analysiert...",
+                "Kernkonzepte werden identifiziert...",
+                "Fachbegriffe werden aussortiert...",
+                "Anschauliche Analogien werden gebaut...",
+                "Erklärung wird verständlich formuliert...",
+                "Fast fertig...",
+            ],
+            en: [
+                "Analyzing topic...",
+                "Identifying core concepts...",
+                "Stripping complex jargon...",
+                "Building vivid analogies...",
+                "Refining simplified output...",
+                "Almost ready...",
+            ]
+        };
+
+        const TRANSLATIONS = {
+            de: {
+                upperSubtitle: "Stufenweise Simplifizierung",
+                upperTitle: "Einfach Erklärt",
+                tagline: "Du stehst vor einem komplexen Begriff oder einer komplizierten Theorie? Gib das Wort ein und lass es dir schrittweise bis hin zu bildhaften Alltagsvergleichen vereinfachen!",
+                inputLabel: "[INPUT_STICHWORT]",
+                inputPlaceholder: "z.B. Quantenverschränkung, Relativitätstheorie, Blockchain...",
+                btnSimplify: "VEREINFACHEN",
+                popularTopics: "Beliebte Themen:",
+                loadingTitle: "Thema wird vereinfacht",
+                explaining: "Thema wird erklärt",
+                simplificationLevel: "Simplifizierungsstufe",
+                copy: "KOPIEREN",
+                copied: "KOPIERT!",
+                newSearch: "← NEUES THEMA SUCHEN",
+                historyTitle: "Suchen-Verlauf",
+                historyClear: "Leeren",
+                historyEmpty: "Verlauf leer",
+                historyEmptyDesc: "Deine Suchen werden hier automatisch gesichert.",
+                tipTitle: "💡 PRO-TIPP:",
+                tipDesc: "Unter Stufe 3 (EASIER!) erzeugt unsere KI bildhafte Analogien, die du dir besonders leicht merken und an andere Personen weitergeben kannst!",
+                readyTitle: "Bereit für deine Fragen",
+                readyDesc: "Gib oben ein beliebiges Stichwort oder Thema ein. Unsere KI bricht die Erklärung in drei Stufen herunter, von der präzisen Zusammenfassung bis zur einprägsamen Analogie.",
+                level1Title: "Vereinfacht",
+                level1Label: "Stufe 1",
+                level1Desc: "Prägnante Zusammenfassung & verständlicher Einstieg",
+                level2Title: "Noch einfacher",
+                level2Label: "Stufe 2",
+                level2Desc: "Fokus auf absolute Kernkonzepte",
+                level3Title: "Total einfach erklärt",
+                level3Label: "Stufe 3",
+                level3Desc: "Bildhafter Alltagsvergleich zum Begreifen",
+                levelSelectionTitle: "Simplifizierungs-Stufen auswählen:",
+                questionsHeading: "Fragen zu diesem Thema?",
+                questionsSubheading: "Klicke auf eine Frage für eine schnelle, einfache Antwort:",
+                inputQAPlaceholder: "Stelle eine eigene Frage...",
+                btnQAAsk: "FRAGEN",
+                qaAnswerClose: "[Schließen]",
+                qaAnswerHeader: "WEITERFÜHRENDE ANTWORT",
+                qaAnswerLoading: "KI FORMULIERT EINE EINFACHE ANTWORT...",
+                qaAnswerError: "Antwort konnte nicht geladen werden.",
+                errorTitle: "Etwas lief schief",
+                errDescKey: "Falls du die Anwendung das erste Mal testest, stelle bitte sicher, dass du deinen GEMINI_API_KEY unter Settings > Secrets in AI Studio hinterlegt hast."
+            },
+            en: {
+                upperSubtitle: "Gradual simplification",
+                upperTitle: "Simply Explained",
+                tagline: "Faced with a complex term or a complicated theory? Enter the word and have it simplified step-by-step down to easy real-world analogies!",
+                inputLabel: "[INPUT_KEYWORD]",
+                inputPlaceholder: "e.g. quantum entanglement, relativity, blockchain...",
+                btnSimplify: "SIMPLIFY IT",
+                popularTopics: "Popular Topics:",
+                loadingTitle: "Topic is being simplified",
+                explaining: "Topic is explained",
+                simplificationLevel: "Simplification Level",
+                copy: "COPY",
+                copied: "COPIED!",
+                newSearch: "← NEW TOPIC SEARCH",
+                historyTitle: "Search History",
+                historyClear: "Clear",
+                historyEmpty: "No searches yet",
+                historyEmptyDesc: "Your searches will be saved here automatically.",
+                tipTitle: "💡 PRO TIP:",
+                tipDesc: "Under Stage 3 (EASIER!), our AI builds vivid real-world analogies that are super easy to remember and explain to others!",
+                readyTitle: "Ready for your topics",
+                readyDesc: "Enter any keyword or concept above. Our AI breaks down the explanation in three stages, from a swift summary to a memorable real-world comparison.",
+                level1Title: "SIMPLIFY IT",
+                level1Label: "Stage 1",
+                level1Desc: "Concise summary & clear entry-point",
+                level2Title: "AND MORE",
+                level2Label: "Stage 2",
+                level2Desc: "Focus on absolute core concepts",
+                level3Title: "EASIER!",
+                level3Label: "Stage 3",
+                level3Desc: "Tangible metaphor for intuitive grasp",
+                levelSelectionTitle: "Select Simplification Level:",
+                questionsHeading: "Questions about this topic?",
+                questionsSubheading: "Click a question for an instant simplified answer:",
+                inputQAPlaceholder: "Ask your own question...",
+                btnQAAsk: "ASK",
+                qaAnswerClose: "[Close]",
+                qaAnswerHeader: "FOLLOW-UP ANSWER",
+                qaAnswerLoading: "FORMULATING SIMPLE REPLY...",
+                qaAnswerError: "Failed to get an answer.",
+                errorTitle: "Something went wrong",
+                errDescKey: "Please make sure you have added your GEMINI_API_KEY inside Settings > Secrets in AI Studio panels for real-time generative output."
+            }
+        };
+
+        // Application state
+        const state = {
+            lang: 'de',
+            keyword: '',
+            currentLevel: 1,
+            isLoading: false,
+            loadingStepIndex: 0,
+            errorChat: null,
+            currentExplanation: null, // parsed payload of explanations response { topic, level1, level2, level3, questions }
+            history: [],
+            isCopied: false,
+            customQuestion: '',
+            isAskingQuestion: false,
+            questionAnswer: null,
+            activeQuestion: null,
+            questionError: null
+        };
+
+        // Rotator interval holder
+        let loadingInterval = null;
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            // Load history state from localstorage
+            const cached = localStorage.getItem('simplifier_history');
+            if (cached) {
+                try {
+                    state.history = JSON.parse(cached);
+                } catch (e) {
+                    console.error("Failed to restore history log", e);
+                }
+            }
+            // Bind default inputs
+            document.getElementById('search-input').value = state.keyword;
+            renderAll();
+        });
+
+        // Toggle app-wide language setup
+        function setLanguage(selectedLang) {
+            state.lang = selectedLang;
+            state.errorChat = null;
+            state.questionError = null;
+            renderAll();
+        }
+
+        // Change current display simplification stage
+        function setLevel(lvl) {
+            state.currentLevel = parseInt(lvl);
+            renderAll();
+        }
+
+        // Clean user interface views and search bars back to initial screen
+        function resetView() {
+            state.currentExplanation = null;
+            state.errorChat = null;
+            state.keyword = '';
+            document.getElementById('search-input').value = '';
+            
+            // Clear QA replies too
+            state.customQuestion = '';
+            state.activeQuestion = null;
+            state.questionAnswer = null;
+            state.questionError = null;
+            
+            renderAll();
+        }
+
+        // Search trigger process using standard local API calls
+       async function triggerSearch() {
+    const inputVal = document.getElementById('search-input').value;
+    if (!inputVal || inputVal.trim() === '') return;
+
+    state.keyword = inputVal.trim();
+    state.isLoading = true;
+    state.errorChat = null;
+    renderAll();
+
+    state.loadingStepIndex = 0;
+    updateLoadingStepText();
+    if (loadingInterval) clearInterval(loadingInterval);
+    loadingInterval = setInterval(() => {
+        state.loadingStepIndex = (state.loadingStepIndex + 1) % LOADING_STEPS[state.lang].length;
+        updateLoadingStepText();
+    }, 1800);
+
+    try {
+        const response = await fetch("/.netlify/functions/gemini", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: `Erkläre ${state.keyword} in 3 Stufen: 1. Einfach, 2. Noch einfacher, 3. Mit einer Analogie.` }),
+        });
+
+        const data = await response.json();
+        
+        // Wichtig: Die genaue Anpassung an deine UI-Struktur (data.candidates...) muss hier folgen
+        state.currentExplanation = data; 
+        state.isLoading = false;
+        clearInterval(loadingInterval);
+        
+        state.history.unshift(state.keyword);
+        localStorage.setItem('simplifier_history', JSON.stringify(state.history));
+        
+        renderAll();
+    } catch (err) {
+        state.isLoading = false;
+        clearInterval(loadingInterval);
+        state.errorChat = err.message;
+        renderAll();
+            }
+        }
+
+        // Interactive follow-up query submission
+        async function submitQAQuestion(questionText) {
+            if (!questionText || questionText.trim() === '' || !state.currentExplanation) return;
+            
+            state.isAskingQuestion = true;
+            state.questionError = null;
+            state.activeQuestion = questionText.trim();
+            state.questionAnswer = null; // reset preceding answer
+            renderAll();
+
+            try {
+                const response = await fetch("/api/ask", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        topic: state.currentExplanation.topic,
+                        question: questionText.trim(),
+                        lang: state.lang
+                    }),
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || (state.lang === 'en' ? "Failed to get an answer." : "Antwort konnte nicht geladen werden."));
+                }
+
+                state.questionAnswer = data.answer;
+                state.customQuestion = '';
+                document.getElementById('qa-custom-input').value = '';
+            } catch (err) {
+                console.error(err);
+                state.questionError = err.message || (state.lang === 'en' ? "Error getting an answer." : "Fehler beim Laden der Antwort.");
+            } finally {
+                state.isAskingQuestion = false;
+                renderAll();
+            }
+        }
+
+        // Trigger manual free-form questions from input bar
+        function submitCustomQuestion() {
+            const val = document.getElementById('qa-custom-input').value;
+            if (!val || val.trim() === '') return;
+            submitQAQuestion(val);
+        }
+
+        // Restore explanation details directly from previous local history
+        function loadItemFromHistory(itemId) {
+            const item = state.history.find(h => h.id === itemId);
+            if (!item) return;
+
+            state.currentExplanation = item.explanations;
+            state.currentLevel = 1;
+            state.errorChat = null;
+
+            state.customQuestion = '';
+            const qaInput = document.getElementById('qa-custom-input');
+            if (qaInput) qaInput.value = '';
+            state.activeQuestion = null;
+            state.questionAnswer = null;
+            state.questionError = null;
+
+            renderAll();
+        }
+
+        // Safely remove unique item node from the sidebar log
+        function deleteHistoryItem(id, event) {
+            if (event) event.stopPropagation();
+            state.history = state.history.filter(h => h.id !== id);
+            localStorage.setItem('simplifier_history', JSON.stringify(state.history));
+            renderAll();
+        }
+
+        // Empty search history
+        function clearSearchHistory() {
+            state.history = [];
+            localStorage.setItem('simplifier_history', JSON.stringify([]));
+            renderAll();
+        }
+
+        // Action helper for reading keydowns
+        function handleInputKeydown(e) {
+            if (e.key === 'Enter' && !state.isLoading) {
+                triggerSearch();
+            }
+        }
+
+        function handleQAInputKeydown(e) {
+            if (e.key === 'Enter' && !state.isAskingQuestion) {
+                submitCustomQuestion();
+            }
+        }
+
+        // Quick rotate sub-narratives for simple feedback
+        function updateLoadingStepText() {
+            const el = document.getElementById('loading-step-text');
+            if (el) {
+                el.innerText = `⏱️ ${LOADING_STEPS[state.lang][state.loadingStepIndex]}`;
+            }
+        }
+
+        // Copy explanation text directly to system clipboards
+        function copyTextToClipboard() {
+            if (!state.currentExplanation) return;
+            let textToCopy = '';
+            switch(state.currentLevel) {
+                case 1: textToCopy = state.currentExplanation.level1; break;
+                case 2: textToCopy = state.currentExplanation.level2; break;
+                case 3: textToCopy = state.currentExplanation.level3; break;
+            }
+
+            // Replace escaped raw double string delimiters safely
+            textToCopy = textToCopy.replace(/\\n/g, '\n');
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                state.isCopied = true;
+                renderCopyButton();
+                setTimeout(() => {
+                    state.isCopied = false;
+                    renderCopyButton();
+                }, 2000);
+            });
+        }
+
+        function closeQAAnswer() {
+            state.activeQuestion = null;
+            state.questionAnswer = null;
+            renderAll();
+        }
+
+        // Subrender: Copy button states specifically to avoid full re-sketches
+        function renderCopyButton() {
+            const btnBox = document.getElementById('btn-copy-content');
+            if (!btnBox) return;
+
+            const labelVal = TRANSLATIONS[state.lang];
+            if (state.isCopied) {
+                btnBox.innerHTML = `
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span class="text-emerald-400 font-extrabold">${labelVal.copied}</span>
+                `;
+            } else {
+                btnBox.innerHTML = `
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    <span>${labelVal.copy}</span>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        // CENTRAL PAGE RENDER ENGINE (Dynamically updates elements based on current state variables)
+        function renderAll() {
+            const langDict = TRANSLATIONS[state.lang];
+
+            // 1. Language Button CSS Accent highlights
+            const btnDE = document.getElementById('btn-lang-de');
+            const btnEN = document.getElementById('btn-lang-en');
+            if (state.lang === 'de') {
+                btnDE.className = "px-3 py-1.5 font-bold uppercase transition-all whitespace-nowrap cursor-pointer bg-[#FACC15] text-black";
+                btnEN.className = "px-3 py-1.5 font-bold uppercase transition-all whitespace-nowrap cursor-pointer text-neutral-400 hover:text-white";
+            } else {
+                btnDE.className = "px-3 py-1.5 font-bold uppercase transition-all whitespace-nowrap cursor-pointer text-neutral-400 hover:text-white";
+                btnEN.className = "px-3 py-1.5 font-bold uppercase transition-all whitespace-nowrap cursor-pointer bg-[#FACC15] text-black";
+            }
+
+            // 2. Headings & Pitch Labels
+            const headerBox = document.getElementById('pitch-header');
+            if (!state.currentExplanation) {
+                headerBox.style.display = 'flex';
+                document.getElementById('pitch-subtitle').innerText = `⚡ ${langDict.upperSubtitle} ⚡`;
+                
+                const splitWords = langDict.upperTitle.split(" ");
+                document.getElementById('pitch-title').innerHTML = `${splitWords[0]} <span class="text-[#FACC15]">${splitWords[1] || ''}</span>`;
+                document.getElementById('pitch-tagline').innerText = langDict.tagline;
+            } else {
+                headerBox.style.display = 'none';
+            }
+
+            // 3. API Alerts logic
+            const alertBox = document.getElementById('error-alert');
+            if (state.errorChat) {
+                alertBox.classList.remove('hidden');
+                document.getElementById('error-alert-title').innerText = langDict.errorTitle;
+                document.getElementById('error-alert-msg').innerText = state.errorChat;
+                document.getElementById('error-alert-desc').innerText = langDict.errDescKey;
+            } else {
+                alertBox.classList.add('hidden');
+            }
+
+            // 4. Inputs & Search Boxes
+            document.getElementById('input-label').innerText = langDict.inputLabel;
+            document.getElementById('search-input').placeholder = langDict.inputPlaceholder;
+            
+            const btnSearch = document.getElementById('btn-search');
+            btnSearch.disabled = state.isLoading;
+            
+            const searchTxt = document.getElementById('btn-search-text');
+            if (state.isLoading) {
+                searchTxt.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4 animate-spin"></i>`;
+            } else {
+                searchTxt.innerText = langDict.btnSimplify;
+            }
+
+            // Popular Suggestions Tag Cloud
+            document.getElementById('popular-topics-label').innerText = langDict.popularTopics;
+            const popularBox = document.getElementById('popular-topics-box');
+            popularBox.innerHTML = '';
+            SUGGESTED_TOPICS[state.lang].forEach(topic => {
+                const btn = document.createElement('button');
+                btn.className = "inline-flex items-center space-x-2 px-3 py-1.5 bg-neutral-950 hover:bg-neutral-850 border border-neutral-800 text-xs font-mono font-bold text-neutral-300 hover:text-white transition-all text-left disabled:opacity-40 cursor-pointer";
+                btn.onclick = () => { if (!state.isLoading) { document.getElementById('search-input').value = topic.keyword; triggerSearch(); } };
+                btn.disabled = state.isLoading;
+                btn.innerHTML = `<span class="opacity-90">${topic.icon}</span> <span class="font-sans">${topic.keyword}</span>`;
+                popularBox.appendChild(btn);
+            });
+
+            // 5. Center display state controls: ONBOARDING, LOADING, or CONTENT EXPLANATIONS
+            const loadingScreen = document.getElementById('loading-screen');
+            const contentScreen = document.getElementById('explanation-view');
+            const onboardingScreen = document.getElementById('onboarding-empty');
+
+            if (state.isLoading) {
+                loadingScreen.classList.remove('hidden');
+                contentScreen.classList.add('hidden');
+                onboardingScreen.classList.add('hidden');
+
+                // Bind loader text
+                document.getElementById('loading-title').innerText = langDict.loadingTitle;
+                document.getElementById('loading-desc').innerText = state.lang === 'en'
+                    ? "Our AI systematically strips down complex jargon to build mouth-sized visual levels."
+                    : "Unsere KI bricht komplexe Wortstrukturen systematisch herraus, um dir mondgerechte Versionen zu erstellen.";
+                
+                updateLoadingStepText();
+            } else if (state.currentExplanation) {
+                loadingScreen.classList.add('hidden');
+                contentScreen.classList.remove('hidden');
+                onboardingScreen.classList.add('hidden');
+
+                // Render explanation variables
+                document.getElementById('explaining-label').innerText = langDict.explaining;
+                document.getElementById('explanation-topic').innerText = state.currentExplanation.topic;
+                document.getElementById('simplification-level-label').innerText = langDict.simplificationLevel;
+                document.getElementById('explanation-stage-counter').innerText = `0${state.currentLevel}/03`;
+
+                // Badge description
+                const titleMetaDE = state.currentLevel === 1 ? langDict.level1Title : state.currentLevel === 2 ? langDict.level2Title : langDict.level3Title;
+                document.getElementById('explanation-stage-badge').innerText = `${state.lang === 'en' ? 'STAGE' : 'STUFE'} ${state.currentLevel}: ${titleMetaDE}`;
+                
+                // Set text formatting with double newlines
+                let rawText = '';
+                if (state.currentLevel === 1) rawText = state.currentExplanation.level1;
+                else if (state.currentLevel === 2) rawText = state.currentExplanation.level2;
+                else if (state.currentLevel === 3) rawText = state.currentExplanation.level3;
+
+                // Format paragraph items
+                const splitParas = rawText.replace(/\\n/g, '\n').split('\n\n');
+                const pBox = document.getElementById('explanation-text');
+                pBox.innerHTML = '';
+                splitParas.forEach(para => {
+                    const cleanPara = para.trim();
+                    if (cleanPara) {
+                        const p = document.createElement('p');
+                        p.className = "text-base md:text-lg leading-relaxed text-neutral-300 font-medium";
+                        p.innerText = cleanPara;
+                        pBox.appendChild(p);
+                    }
+                });
+
+                // Clear Copy states
+                renderCopyButton();
+
+                // Selection Tabs styling directly inside the frame
+                document.getElementById('level-selection-label').innerText = langDict.levelSelectionTitle;
+                const stageDescText = state.currentLevel === 1 ? langDict.level1Desc : state.currentLevel === 2 ? langDict.level2Desc : langDict.level3Desc;
+                document.getElementById('explanation-stage-desc').innerText = stageDescText;
+
+                // Configure buttons
+                for (let i = 1; i <= 3; i++) {
+                    const btn = document.getElementById(`stage-tab-${i}`);
+                    const isActive = state.currentLevel === i;
+                    const stageTitle = i === 1 ? langDict.level1Title : i === 2 ? langDict.level2Title : langDict.level3Title;
+                    
+                    btn.className = `text-left group cursor-pointer p-4 border transition-all ${
+                        isActive ? "bg-neutral-900 border-[#FACC15]" : "bg-neutral-950/40 border-neutral-800 hover:border-[#FACC15]/50"
+                    }`;
+                    btn.innerHTML = `
+                        <div class="h-1 w-full mb-3 transition-all ${isActive ? 'bg-[#FACC15]' : 'bg-neutral-800 group-hover:bg-[#FACC15]/40'}"></div>
+                        <div class="flex flex-col">
+                            <span class="text-[9px] uppercase tracking-widest mb-1 ${isActive ? 'text-[#FACC15] font-bold' : 'text-neutral-500'}">
+                                ${state.lang === 'en' ? 'STAGE' : 'STUFE'} 0${i}
+                            </span>
+                            <span class="text-xs font-black uppercase tracking-wider ${isActive ? 'text-white' : 'text-neutral-400 group-hover:text-white'}">
+                                ${stageTitle}
+                            </span>
+                        </div>
+                    `;
+                }
+
+                // Interactive Q&A Area rendering
+                document.getElementById('qa-heading').innerText = langDict.questionsHeading;
+                document.getElementById('qa-custom-input').placeholder = langDict.inputQAPlaceholder;
+                document.getElementById('qa-btn-text').innerText = langDict.btnQAAsk;
+
+                // Free-form Ask CTA clickability
+                const qaBtnAsk = document.getElementById('btn-qa-ask');
+                qaBtnAsk.disabled = state.isAskingQuestion;
+
+                // Inside explanation's follow-up questions boxes
+                const questionsList = state.currentExplanation.questions || [];
+                const qaSection = document.getElementById('dynamic-questions');
+                if (questionsList.length > 0) {
+                    qaSection.classList.remove('hidden');
+                    document.getElementById('qa-subheading').innerText = langDict.questionsSubheading;
+                    
+                    const listButtons = document.getElementById('dynamic-questions-buttons');
+                    listButtons.innerHTML = '';
+                    
+                    questionsList.forEach(q => {
+                        const qBtn = document.createElement('button');
+                        qBtn.className = "text-left text-xs bg-neutral-950 hover:bg-neutral-900 border border-[#FACC15]/40 hover:border-[#FACC15] px-3 py-2 text-neutral-300 hover:text-[#FACC15] transition-all font-medium flex items-center justify-between group cursor-pointer";
+                        qBtn.disabled = state.isAskingQuestion;
+                        qBtn.onclick = () => submitQAQuestion(q);
+                        qBtn.innerHTML = `
+                            <span>${q}</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-[#FACC15]/60 group-hover:text-[#FACC15] transition-colors"></i>
+                        `;
+                        listButtons.appendChild(qBtn);
+                    });
+                } else {
+                    qaSection.classList.add('hidden');
+                }
+
+                // QA Submission loader
+                const qaLoader = document.getElementById('qa-loader');
+                if (state.isAskingQuestion) {
+                    qaLoader.classList.remove('hidden');
+                    document.getElementById('qa-loader-text').innerText = langDict.qaAnswerLoading;
+                } else {
+                    qaLoader.classList.add('hidden');
+                }
+
+                // QA Defer error alert boxes
+                const qaErrorEl = document.getElementById('qa-error');
+                if (state.questionError) {
+                    qaErrorEl.classList.remove('hidden');
+                    qaErrorEl.innerText = `⚠️ ${state.questionError}`;
+                } else {
+                    qaErrorEl.classList.add('hidden');
+                }
+
+                // QA Active Answer Block rendering
+                const answerBlock = document.getElementById('qa-answer-block');
+                if (state.activeQuestion && state.questionAnswer && !state.isAskingQuestion) {
+                    answerBlock.classList.remove('hidden');
+                    document.getElementById('qa-close-btn').innerText = langDict.qaAnswerClose;
+                    document.getElementById('qa-tag-label').innerText = langDict.qaAnswerHeader;
+                    document.getElementById('qa-active-question-quote').innerText = `"${state.activeQuestion}"`;
+                    
+                    const ansContentBox = document.getElementById('qa-answer-content');
+                    ansContentBox.innerHTML = '';
+                    
+                    const splitQAAnswers = state.questionAnswer.replace(/\\n/g, '\n').split('\n\n');
+                    splitQAAnswers.forEach(pAnswer => {
+                        const cleanPTag = pAnswer.trim();
+                        if (cleanPTag) {
+                            const p = document.createElement('p');
+                            p.innerText = cleanPTag;
+                            ansContentBox.appendChild(p);
+                        }
+                    });
+                } else {
+                    answerBlock.classList.add('hidden');
+                }
+
+                // Bottom new search triggers
+                document.getElementById('btn-new-search').innerText = langDict.newSearch;
+
+            } else {
+                loadingScreen.classList.add('hidden');
+                contentScreen.classList.add('hidden');
+                onboardingScreen.classList.remove('hidden');
+
+                // Onboarding Default visual guides
+                document.getElementById('ready-title').innerText = langDict.readyTitle;
+                document.getElementById('ready-desc').innerText = langDict.readyDesc;
+
+                const readyGrid = document.getElementById('ready-showcase-grid');
+                readyGrid.innerHTML = `
+                    <div class="p-4 bg-neutral-950 border border-neutral-800">
+                      <div class="h-1 w-12 bg-[#FACC15] mb-2"></div>
+                      <span class="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest block mb-1">
+                        STAGE 1
+                      </span>
+                      <p class="font-black text-xs text-white uppercase tracking-wider">${langDict.level1Title}</p>
+                      <p class="text-[10px] text-neutral-400 mt-1">
+                        ${state.lang === 'en' ? 'Summary of topic.' : 'Zusammenfassung des Themas.'}
+                      </p>
+                    </div>
+                    <div class="p-4 bg-neutral-950 border border-neutral-800">
+                      <div class="h-1 w-12 bg-neutral-700 mb-2"></div>
+                      <span class="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest block mb-1">
+                        STAGE 2
+                      </span>
+                      <p class="font-black text-xs text-white uppercase tracking-wider">${langDict.level2Title}</p>
+                      <p class="text-[10px] text-neutral-400 mt-1">
+                        ${state.lang === 'en' ? 'Focus on the core.' : 'Fokus auf das Kernkonzept.'}
+                      </p>
+                    </div>
+                    <div class="p-4 bg-neutral-950 border border-neutral-800">
+                      <div class="h-1 w-12 bg-neutral-700 mb-2"></div>
+                      <span class="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest block mb-1">
+                        STAGE 3
+                      </span>
+                      <p class="font-black text-xs text-white uppercase tracking-wider">${langDict.level3Title}</p>
+                      <p class="text-[10px] text-neutral-400 mt-1">
+                        ${state.lang === 'en' ? 'Analogy or metaphor.' : 'Bildhafte Analogie.'}
+                      </p>
+                    </div>
+                `;
+            }
+
+            // 6. Sidebar History ledger render
+            document.getElementById('history-box-title').innerText = langDict.historyTitle;
+            document.getElementById('history-clear-btn-lbl').innerText = langDict.historyClear;
+            
+            const btnClearHist = document.getElementById('btn-clear-history');
+            if (state.history.length > 0) {
+                btnClearHist.classList.remove('hidden');
+            } else {
+                btnClearHist.classList.add('hidden');
+            }
+
+            const historyListControl = document.getElementById('history-list-box');
+            historyListControl.innerHTML = '';
+
+            if (state.history.length === 0) {
+                historyListControl.innerHTML = `
+                    <div class="py-12 text-center text-xs text-neutral-500 flex flex-col items-center select-none">
+                      <span class="text-xl mb-1.5 opacity-60">📜</span>
+                      <p class="font-bold uppercase tracking-wider text-[10px]">${langDict.historyEmpty}</p>
+                      <p class="mt-1 text-center max-w-[200px] text-neutral-600 font-medium">
+                        ${langDict.historyEmptyDesc}
+                      </p>
+                    </div>
+                `;
+            } else {
+                state.history.forEach(item => {
+                    const isViewing = state.currentExplanation && state.currentExplanation.topic.toLowerCase() === item.explanations.topic.toLowerCase();
+                    const itemNode = document.createElement('div');
+                    
+                    itemNode.className = `group w-full p-3 text-left transition-all flex items-center justify-between border cursor-pointer ${
+                        isViewing
+                          ? "bg-neutral-950 border-[#FACC15] text-white"
+                          : "bg-neutral-950/40 hover:bg-neutral-950 border-neutral-850 text-neutral-300"
+                    }`;
+                    itemNode.onclick = () => loadItemFromHistory(item.id);
+
+                    itemNode.innerHTML = `
+                      <div class="flex-grow min-w-0 pr-2">
+                        <p class="font-black text-xs uppercase tracking-wide truncate ${isViewing ? 'text-[#FACC15]' : 'text-white'}">
+                          ${item.keyword}
+                        </p>
+                        <p class="text-[9px] ${isViewing ? 'text-neutral-400' : 'text-neutral-500'} font-mono uppercase tracking-widest mt-0.5">
+                          ⌚ ${item.timestamp}${state.lang === 'de' ? ' Uhr' : ''}
+                        </p>
+                      </div>
+                      <div class="flex items-center space-x-1.5 shrink-0">
+                        <button
+                          onclick="deleteHistoryItem('${item.id}', event)"
+                          class="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-neutral-850 ${isViewing ? 'text-neutral-400 hover:text-rose-500' : 'text-neutral-500 hover:text-rose-500'}"
+                          title="Löschen"
+                        >
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 ${isViewing ? 'text-[#FACC15]' : 'text-neutral-600'}"></i>
+                      </div>
+                    `;
+                    historyListControl.appendChild(itemNode);
+                });
+            }
+
+            // Bind pro tip explanations
+            document.getElementById('pro-tip-title').innerText = langDict.tipTitle;
+            document.getElementById('pro-tip-desc').innerText = langDict.tipDesc;
+
+            // Footer italic active mode indicators
+            document.getElementById('context-mode-sub').innerText = state.lang === 'en'
+                ? '"Explain like I\'m five" mode active'
+                : '"Explain like I\'m five" Modus aktiv';
+
+            // Refresh Lucide graphics vectors
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
