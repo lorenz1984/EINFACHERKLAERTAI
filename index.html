@@ -543,10 +543,13 @@
             body: JSON.stringify({ prompt: `Erkläre ${state.keyword} in 3 Stufen: 1. Einfach, 2. Noch einfacher, 3. Mit einer Analogie.` }),
         });
 
-        const data = await response.json();
+       const data = await response.json();
         
-        // Wichtig: Die genaue Anpassung an deine UI-Struktur (data.candidates...) muss hier folgen
-        state.currentExplanation = data; 
+        // Extrahiere den Text aus der Gemini-Antwortstruktur
+        const rawText = data.candidates[0].content.parts[0].text;
+        
+        // Jetzt verarbeitest du rawText weiter
+        state.currentExplanation = rawText; 
         state.isLoading = false;
         clearInterval(loadingInterval);
         
